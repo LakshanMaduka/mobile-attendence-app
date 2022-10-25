@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/constants.dart';
+import 'package:flutter_application_1/models/usermodel.dart';
 import 'package:flutter_application_1/provider/registration.dart';
 import 'package:flutter_application_1/provider/registration_provider.dart';
+import 'package:flutter_application_1/services/encryption/message_encrypt.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -25,10 +27,12 @@ class _HomePageState extends State<HomePage> {
   var _isLoading = false;
   var email;
   String? name;
+  late Future<UserModel> fdata;
 
   @override
   void initState() {
     email = FirebaseAuth.instance.currentUser!.email;
+
     super.initState();
   }
 
@@ -57,7 +61,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: kPrimaryColor,
-        title: Text('Home'),
+        title: const Text('Home'),
         actions: [
           PopupMenuButton(
               onSelected: (value) {
@@ -66,35 +70,48 @@ class _HomePageState extends State<HomePage> {
                 }
               },
               itemBuilder: (context) => [
-                    PopupMenuItem(
+                    const PopupMenuItem(
                         value: MenuItem.item1, child: Text('Sign Out'))
                   ])
         ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              QrImage(
-                data: {
-                  " email": email,
-                  "date": DateFormat('yyyy-MM-dd').format(DateTime.now())
-                }.toString(),
-                size: 300,
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              // ElevatedButton(
-              //   style: ElevatedButton.styleFrom(primary: kPrimaryColor),
-              //   child: Text('signOut'),
-              //   onPressed: () => FirebaseAuth.instance.signOut(),
-              // ),
-            ],
-          ),
-        ),
-      ),
+      body: FutureBuilder(
+          future: fdata,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              UserModel data = snapshot.data as UserModel;
+              final vetext = CryptoEncrpt.ecryptText(data.verifyText, data.key);
+              return Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      QrImage(
+                        data: {
+                          " email": email,
+                          "vtext": vetext,
+                          "date":
+                              DateFormat('yyyy-MM-dd').format(DateTime.now())
+                        }.toString(),
+                        size: 300,
+                      ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      // ElevatedButton(
+                      //   style: ElevatedButton.styleFrom(primary: kPrimaryColor),
+                      //   child: Text('signOut'),
+                      //   onPressed: () => FirebaseAuth.instance.signOut(),
+                      // ),
+                    ],
+                  ),
+                ),
+              );
+            } else if (snapshot.hasError) {
+              return Text("${snapshot.error}");
+            }
+            return const Center(child: CircularProgressIndicator());
+          }),
     );
   }
 }
