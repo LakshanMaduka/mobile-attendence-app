@@ -120,7 +120,7 @@ class _BodyState extends State<Body> {
     showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => Center(
+        builder: (context) => const Center(
               child: CircularProgressIndicator(),
             ));
     try {
